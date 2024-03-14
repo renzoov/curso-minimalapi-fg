@@ -20,8 +20,13 @@ builder.Services.AddCors(opciones =>
 });
 
 builder.Services.AddOutputCache();
+builder.Services.AddEndpointsApiExplorer(); //habilita que swagger explore nuestros endpoints
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 app.UseOutputCache();
