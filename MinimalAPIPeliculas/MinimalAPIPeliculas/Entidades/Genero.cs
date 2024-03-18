@@ -1,4 +1,6 @@
-﻿namespace MinimalAPIPeliculas.Entidades
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MinimalAPIPeliculas.Entidades
 {
     public class Genero
     {
