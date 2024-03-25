@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using MinimalAPIPeliculas;
 using MinimalAPIPeliculas.Endpoints;
-using MinimalAPIPeliculas.Entidades;
-using MinimalAPIPeliculas.Migrations;
 using MinimalAPIPeliculas.Repositorios;
+using MinimalAPIPeliculas.Servicios;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +33,14 @@ builder.Services.AddEndpointsApiExplorer(); //habilita que swagger explore nuest
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IRepositorioGeneros, RepositorioGeneros>();
+builder.Services.AddScoped<IRepositorioActores, RepositorioActores>();
+builder.Services.AddScoped<IRepositorioPeliculas, RepositorioPeliculas>();
+builder.Services.AddScoped<IRepositorioComentarios, RepositorioComentarios>();
+//builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenadorArchivosAzure>();
+//builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenarArchivosCloudinary>();
+builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenarArchivosLocal>();
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAutoMapper(typeof(Program));
 
@@ -44,11 +49,16 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseStaticFiles();
+
 app.UseCors();
 app.UseOutputCache();
 
 app.MapGet("/", [EnableCors(policyName: "libre")]() => "Hello World!");
 
 app.MapGroup("/generos").MapGeneros();
+app.MapGroup("/actores").MapActores();
+app.MapGroup("/peliculas").MapPeliculas();
+app.MapGroup("/pelicula/{peliculaId:int}/comentarios").MapComentarios();
 
 app.Run();
