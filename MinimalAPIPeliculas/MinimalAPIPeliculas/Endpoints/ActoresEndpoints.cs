@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using MinimalAPIPeliculas.DTOs;
 using MinimalAPIPeliculas.Entidades;
+using MinimalAPIPeliculas.Filtros;
 using MinimalAPIPeliculas.Repositorios;
 using MinimalAPIPeliculas.Servicios;
 
@@ -18,8 +20,9 @@ namespace MinimalAPIPeliculas.Endpoints
             group.MapGet("/", ObtenerTodos).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("actores-get"));
             group.MapGet("/{id:int}", ObtenerPorId);
             group.MapGet("obtenerPorNombre/{nombre}", ObtenerPorNombre);
-            group.MapPost("/", Crear).DisableAntiforgery();
-            group.MapPut("/{id:int}", Actualizar).DisableAntiforgery();
+
+            group.MapPost("/", Crear).DisableAntiforgery().AddEndpointFilter<FiltroValidaciones<CrearActorDTO>>();
+            group.MapPut("/{id:int}", Actualizar).DisableAntiforgery().AddEndpointFilter<FiltroValidaciones<CrearActorDTO>>();
             group.MapDelete("/{id:int}", Borrar);
 
             return group;
@@ -58,7 +61,7 @@ namespace MinimalAPIPeliculas.Endpoints
             return TypedResults.Ok(actoresDTO);
         }
 
-        static async Task<Created<ActorDTO>> Crear([FromForm] CrearActorDTO crearActorDTO, IRepositorioActores repositorio, 
+        static async Task<Results<Created<ActorDTO>, ValidationProblem>> Crear([FromForm] CrearActorDTO crearActorDTO, IRepositorioActores repositorio, 
             IOutputCacheStore outputCacheStore, IMapper mapper, IAlmacenadorArchivos almacenadorArchivos)
         {
             var actor = mapper.Map<Actor>(crearActorDTO);
@@ -77,7 +80,7 @@ namespace MinimalAPIPeliculas.Endpoints
         }
 
         static async Task<Results<NoContent, NotFound>> Actualizar(int id, [FromForm] CrearActorDTO crearActorDTO, IRepositorioActores repositorio,
-            IAlmacenadorArchivos almacenadorArchivos,IOutputCacheStore outputCacheStore,IMapper mapper)
+            IAlmacenadorArchivos almacenadorArchivos, IOutputCacheStore outputCacheStore, IMapper mapper)
         {
             var actorDB = await repositorio.ObtenerPorId(id);
             if (actorDB is null) return TypedResults.NotFound();
