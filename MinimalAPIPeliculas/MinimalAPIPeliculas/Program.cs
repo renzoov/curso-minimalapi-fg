@@ -1,12 +1,15 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MinimalAPIPeliculas;
 using MinimalAPIPeliculas.Endpoints;
 using MinimalAPIPeliculas.Entidades;
 using MinimalAPIPeliculas.Repositorios;
 using MinimalAPIPeliculas.Servicios;
+using MinimalAPIPeliculas.Utilidades;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +20,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 {
     opciones.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddIdentityCore<IdentityUser>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+builder.Services.AddScoped<UserManager<IdentityUser>>();
+builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
 builder.Services.AddCors(opciones =>
 {
@@ -40,6 +47,7 @@ builder.Services.AddScoped<IRepositorioActores, RepositorioActores>();
 builder.Services.AddScoped<IRepositorioPeliculas, RepositorioPeliculas>();
 builder.Services.AddScoped<IRepositorioComentarios, RepositorioComentarios>();
 builder.Services.AddScoped<IRepositorioErrores, RepositorioErrores>();
+builder.Services.AddTransient<IServicioUsuarios, ServicioUsuarios>();
 //builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenadorArchivosAzure>();
 //builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenarArchivosCloudinary>();
 builder.Services.AddScoped<IAlmacenadorArchivos, AlmacenarArchivosLocal>();
@@ -50,6 +58,25 @@ builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddProblemDetails();
+
+builder.Services.AddAuthentication().AddJwtBearer(opciones =>
+{
+    opciones.MapInboundClaims = false;
+    opciones.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        //IssuerSigningKey = Llaves.ObtenerLlave(builder.Configuration),
+        IssuerSigningKeys = Llaves.ObtenerTodasLasLlave(builder.Configuration),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+builder.Services.AddAuthorization(opciones =>
+{
+    opciones.AddPolicy("esadmin", politica => politica.RequireClaim("esadmin"));
+});
 
 var app = builder.Build();
 
@@ -83,6 +110,8 @@ app.UseStaticFiles();
 app.UseCors();
 app.UseOutputCache();
 
+app.UseAuthorization();
+
 app.MapGet("/", [EnableCors(policyName: "libre")]() => "Hello World!");
 app.MapGet("/error", () =>
 {
@@ -93,5 +122,6 @@ app.MapGroup("/generos").MapGeneros();
 app.MapGroup("/actores").MapActores();
 app.MapGroup("/peliculas").MapPeliculas();
 app.MapGroup("/pelicula/{peliculaId:int}/comentarios").MapComentarios();
+app.MapGroup("/usuarios").MapUsuarios();
 
 app.Run();

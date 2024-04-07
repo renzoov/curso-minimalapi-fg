@@ -12,12 +12,12 @@ namespace MinimalAPIPeliculas.Endpoints
     {
         public static RouteGroupBuilder MapGeneros(this RouteGroupBuilder group)
         {
-            group.MapGet("/", ObtenerGeneros).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("generos-get"));
+            group.MapGet("/", ObtenerGeneros).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("generos-get")).RequireAuthorization();
             group.MapGet("/{id:int}", ObtenerGeneroPorId);
 
-            group.MapPost("/", CrearGenero).AddEndpointFilter<FiltroValidaciones<CrearGeneroDTO>>();
-            group.MapPut("/{id:int}", ActualizarGenero).AddEndpointFilter<FiltroValidaciones<CrearGeneroDTO>>(); ;
-            group.MapDelete("/{id:int}", BorrarGenero);
+            group.MapPost("/", CrearGenero).AddEndpointFilter<FiltroValidaciones<CrearGeneroDTO>>().RequireAuthorization("esadmin");
+            group.MapPut("/{id:int}", ActualizarGenero).AddEndpointFilter<FiltroValidaciones<CrearGeneroDTO>>().RequireAuthorization("esadmin"); 
+            group.MapDelete("/{id:int}", BorrarGenero).RequireAuthorization("esadmin");
 
             return group;
         }
