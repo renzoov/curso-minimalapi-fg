@@ -1,4 +1,6 @@
 ﻿
+using Path = System.IO.Path;
+
 namespace MinimalAPIPeliculas.Servicios
 {
     public class AlmacenarArchivosLocal : IAlmacenadorArchivos

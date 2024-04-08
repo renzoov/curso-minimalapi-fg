@@ -1,4 +1,5 @@
 ﻿using MinimalAPIPeliculas.Entidades;
+using Error = MinimalAPIPeliculas.Entidades.Error;
 
 namespace MinimalAPIPeliculas.Repositorios
 {

@@ -2,6 +2,7 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using System.Data.Common;
+using Path = System.IO.Path;
 
 namespace MinimalAPIPeliculas.Servicios
 {

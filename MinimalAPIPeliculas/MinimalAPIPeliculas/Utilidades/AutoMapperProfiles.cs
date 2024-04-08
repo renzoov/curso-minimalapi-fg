@@ -9,6 +9,7 @@ namespace MinimalAPIPeliculas.Utilidades
         public AutoMapperProfiles()
         {
             CreateMap<CrearGeneroDTO, Genero>();
+            CreateMap<ActualizarGeneroDTO, Genero>();
             CreateMap<Genero, GeneroDTO>();
 
             CreateMap<CrearActorDTO, Actor>()

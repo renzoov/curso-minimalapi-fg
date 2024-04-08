@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MinimalAPIPeliculas;
 using MinimalAPIPeliculas.Endpoints;
 using MinimalAPIPeliculas.Entidades;
+using MinimalAPIPeliculas.GraphQL;
 using MinimalAPIPeliculas.Repositorios;
 using MinimalAPIPeliculas.Servicios;
+using MinimalAPIPeliculas.Swagger;
 using MinimalAPIPeliculas.Utilidades;
+using Error = MinimalAPIPeliculas.Entidades.Error;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +24,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 {
     opciones.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddGraphQLServer()
+    .AddQueryType<Query>()
+    .AddMutationType<Mutacion>()
+    .AddAuthorization()
+    .AddProjections()
+    .AddFiltering()
+    .AddSorting();
 
 builder.Services.AddIdentityCore<IdentityUser>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.AddScoped<UserManager<IdentityUser>>();
@@ -38,9 +50,56 @@ builder.Services.AddCors(opciones =>
     });
 });
 
-builder.Services.AddOutputCache();
+//builder.Services.AddOutputCache();
+builder.Services.AddStackExchangeRedisOutputCache(opciones =>
+{
+    opciones.Configuration = builder.Configuration.GetConnectionString("redis");
+});
 builder.Services.AddEndpointsApiExplorer(); //habilita que swagger explore nuestros endpoints
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Peliculas API",
+        Description = "Esta es una web api para trabajar con datos de películas",
+        Contact = new OpenApiContact
+        {
+            Email = "felipe@hotmail.com",
+            Name = "Felipe Gavilán",
+            Url = new Uri("https://gavilan.blog")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT",
+            Url = new Uri("https://opensource.org/license/mit/")
+        }
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
+    });
+
+    c.OperationFilter<FiltroAutorizacion>();
+
+    //c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    //{
+    //    {
+    //        new OpenApiSecurityScheme
+    //        {
+    //            Reference = new OpenApiReference
+    //            {
+    //                Type = ReferenceType.SecurityScheme,
+    //                Id = "Bearer"
+    //            }
+    //        }, new string[]{}
+    //    }
+    //});
+});
 
 builder.Services.AddScoped<IRepositorioGeneros, RepositorioGeneros>();
 builder.Services.AddScoped<IRepositorioActores, RepositorioActores>();
@@ -111,6 +170,8 @@ app.UseCors();
 app.UseOutputCache();
 
 app.UseAuthorization();
+
+app.MapGraphQL();
 
 app.MapGet("/", [EnableCors(policyName: "libre")]() => "Hello World!");
 app.MapGet("/error", () =>
